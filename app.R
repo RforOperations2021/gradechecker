@@ -3,6 +3,7 @@ library(googlesheets)
 library(shinyjs)
 library(dplyr)
 library(shinythemes)
+library(shinydashboard)
 
 # Connect to Google Sheet with Grades
 gs_auth()
@@ -12,57 +13,45 @@ sheet_key <- gs_key("1yZBck1ONc1EpR6g2dKBsQBYWIl2Dq2WtISbGdEUT_oE")
 passwords <- gs_read(sheet_key, ws = 6)
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(style = "margin: 5px;", theme = shinytheme("sandstone"),
-    # Application title
-    titlePanel("R Shiny for Operations Management Grade App"),
-    useShinyjs(),
-    absolutePanel(id = "auth", top = 60, left = 0, style = "z-index: 1000; min-width: 350px;",
-                  # Login and Password Creation Panel
-                  wellPanel(
-                          textInput("andrewID",
-                                    "Andrew ID:",
-                                    placeholder = "Enter you Andrew ID"),
-                          # Login Div
-                          div(id = "login",
-                              passwordInput("password",
-                                            "Password:"),
-                              column(4, 
-                                     disabled(
-                                         actionButton("logIn",
-                                                      "Log In")
-                                     )
-                             ),
-                             column(8, style = "padding-top: 12px;",
-                                    HTML('<a href="mailto:gla@andrew.cmu.edu&subject=Forgot%20Password">Forgot password?</a>')
-                              ),
-                              br(), br()
-                      )
-                  )
-    ),
-    
-    # Select Sheet to View
-    fluidRow(
-        selectInput("assignment",
-                    "View Grade for:",
-                    choices = c("Course Grades", "Homework 1", "Project 1", "Homework 2", "Project 2"),
-                    selected = "Course Grades"
+ui <- dashboardPage(skin = "green",
+        dashboardHeader(
+            title = "R Shiny for Operations Management Grade App"
+        ),
+        dashboardSidebar(
+            useShinyjs(),
+            # Login Div
+            div(id = "auth",
+                    textInput("andrewID",
+                              "Andrew ID:",
+                              placeholder = "Enter you Andrew ID"),
+                    passwordInput("password",
+                                  "Password:"),
+                    disabled(actionButton("logIn", "Log In")),
+                    div(style = "padding-left: 15px;", 
+                        HTML('<a href="mailto:gla@andrew.cmu.edu&subject=Forgot%20Password">Forgot password?</a>')
                     )
-    ),
-    # Table with Grades
-    fluidRow(
-        DT::dataTableOutput("gradeTable")
-    )
+            ),
+            selectInput("assignment",
+                        "View Grade for:",
+                        choices = c("Course Grades", "Homework 1", "Project 1", "Homework 2", "Project 2"),
+                        selected = "Homework 1")
+            ),
+        dashboardBody(
+                fluidRow(
+                    valueBoxOutput("gradeAverage")
+                ),
+                # Table with Grades
+                fluidRow(
+                    box(width = 12, 
+                        DT::dataTableOutput("gradeTable"))
+                )
+            )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
     # Set login to false and save passwords as reactive value
     values <- reactiveValues(login = FALSE, passwords = passwords)
-    # Allow users to create login
-    observeEvent(input$makePass, {
-        show("createPass")
-        hide("login")
-    })
     # Check if password fits
     observe({
         if (input$andrewID %in% values$passwords$`Andrew ID` & nchar(input$password) > 5 & grepl('[^[:alnum:]]', input$password, perl = TRUE)) {
@@ -99,12 +88,23 @@ server <- function(input, output) {
             showNotification("Could not match username or password!", type = "error")
         }
     })
+    grades <- reactive({
+        grades <- gs_read(sheet_key, ws = input$assignment) %>%
+            filter(!is.na(`Last Name`)) %>%
+            mutate(`Final Grade` = as.numeric(`Final Grade`))
+    })
     # Load Grade Sheet
     grade <- reactive({
         if (values$login) {
-            grade <- gs_read(sheet_key, ws = input$assignment) %>%
+            grades() %>%
                 filter(`Andrew ID` == input$andrewID)
         }
+    })
+    # Grade Average
+    output$gradeAverage <- renderValueBox({
+        value <- mean(grades()$`Final Grade`, na.rm = TRUE)
+        subtitle <- paste("Avg for ", input$assignment)
+        valueBox(value = round(value ,2), subtitle = subtitle, icon = icon("check-square"))
     })
     # Display grade
     output$gradeTable <- DT::renderDataTable({
