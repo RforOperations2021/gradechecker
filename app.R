@@ -26,29 +26,16 @@ ui <- fluidPage(style = "margin: 5px;", theme = shinytheme("sandstone"),
                           div(id = "login",
                               passwordInput("password",
                                             "Password:"),
-                              column(8, 
-                                     actionButton("makePass", 
-                                           "Create Password")
-                              ),
                               column(4, 
                                      disabled(
                                          actionButton("logIn",
                                                       "Log In")
                                      )
+                             ),
+                             column(8, style = "padding-top: 12px;",
+                                    HTML('<a href="mailto:gla@andrew.cmu.edu&subject=Forgot%20Password">Forgot password?</a>')
                               ),
                               br(), br()
-                      ),
-                      # Password creation div
-                      hidden(
-                          div(id = "createPass",
-                              passwordInput("passwordNew",
-                                            "Enter a new Password:"),
-                              HTML('Passwords must be at least 7 characters long and contain at least 1 special character.<br>'),
-                              disabled(
-                                  actionButton("create",
-                                               "Create Password")
-                              )
-                          )
                       )
                   )
     ),
@@ -76,17 +63,9 @@ server <- function(input, output) {
         show("createPass")
         hide("login")
     })
-    # Check if new password fits
-    observe({
-        if (input$andrewID %in% values$passwords$`Andrew ID` & nchar(input$passwordNew) > 6 & grepl('[^[:alnum:]]', input$passwordNew, perl = TRUE)) {
-            enable("create")
-        } else {
-            disable("create")
-        }
-    })
     # Check if password fits
     observe({
-        if (input$andrewID %in% values$passwords$`Andrew ID` & nchar(input$password) > 6 & grepl('[^[:alnum:]]', input$password, perl = TRUE)) {
+        if (input$andrewID %in% values$passwords$`Andrew ID` & nchar(input$password) > 5 & grepl('[^[:alnum:]]', input$password, perl = TRUE)) {
             enable("logIn")
         } else {
             disable("logIn")
@@ -130,7 +109,11 @@ server <- function(input, output) {
     # Display grade
     output$gradeTable <- DT::renderDataTable({
         grade()
-    }, options = list(dom = 't')
+    }, extensions = 'Buttons', 
+    rownames = FALSE,
+    options = list(dom = 'Bt',
+                   buttons = c('copy', 'csv', 'pdf')
+                   )
     )
 }
 
