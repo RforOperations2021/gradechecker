@@ -4,3 +4,4 @@
 .Ruserdata
 .httr-oauth
 rsconnect/
+.DS_Store
