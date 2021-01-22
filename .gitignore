@@ -5,3 +5,5 @@
 .httr-oauth
 rsconnect/
 .DS_Store
+.secrets
+*.xlsx

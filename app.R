@@ -1,16 +1,12 @@
 library(shiny)
-library(googlesheets)
+library(readxl)
 library(shinyjs)
 library(dplyr)
 library(shinythemes)
 library(shinydashboard)
 
-# Connect to Google Sheet with Grades
-gs_auth()
-# Grading Sheet Key
-sheet_key <- gs_key("1yZBck1ONc1EpR6g2dKBsQBYWIl2Dq2WtISbGdEUT_oE")
-# Load passwords for name check
-passwords <- gs_read(sheet_key, ws = 6)
+file <- "./grades/R Shiny 2021 Grades.xlsx"
+passwords <- read_excel(file, sheet = 5)
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(skin = "green",
@@ -26,14 +22,11 @@ ui <- dashboardPage(skin = "green",
                               placeholder = "Enter you Andrew ID"),
                     passwordInput("password",
                                   "Password:"),
-                    disabled(actionButton("logIn", "Log In")),
-                    div(style = "padding-left: 15px;", 
-                        HTML('<a href="mailto:gla@andrew.cmu.edu&subject=Forgot%20Password">Forgot password?</a>')
-                    )
+                    disabled(actionButton("logIn", "Log In"))
             ),
             selectInput("assignment",
                         "View Grade for:",
-                        choices = c("Course Grades", "Homework 1", "Project 1", "Homework 2", "Project 2"),
+                        choices = c("Course Grades", "Homework 1", "Homework 2", "Final Project"),
                         selected = "Homework 1")
             ),
         dashboardBody(
@@ -60,25 +53,9 @@ server <- function(input, output) {
             disable("logIn")
         }
     })
-    # Store new password in google sheet
-    observeEvent(input$create, {
-        # grades <- grades()
-        if (input$andrewID %in% values$passwords$`Andrew ID`) {
-            row <- which(grades$`Andrew ID` == input$andrewID) + 1
-            gs_edit_cells(sheet_key, ws = 6, anchor = paste0("B", row), input = input$passwordNew, byrow = TRUE)
-            showNotification("You have succesfully created a Password", type = "message")
-            # Read in New Password
-            values$passwords <- gs_read(sheet_key, ws = 6)
-            hide("createPass")
-            show("login")
-        } else {
-            showNotification("Please enter a valid Andrew ID", type = "error")
-            updateTextInput("passwordNew", value = "")
-        }
-    })
     # Authenticate Users
     observeEvent(input$logIn, {
-        auth <- gs_read(sheet_key, ws = 6) %>%
+        auth <- read_excel(file, sheet = 5) %>%
             filter(`Andrew ID` == input$andrewID)
         values$login <- auth$Password == input$password
         if (values$login) {
@@ -89,7 +66,7 @@ server <- function(input, output) {
         }
     })
     grades <- reactive({
-        grades <- gs_read(sheet_key, ws = input$assignment) %>%
+        grades <- read_excel(file, sheet = input$assignment) %>%
             filter(!is.na(`Last Name`)) %>%
             mutate(`Final Grade` = as.numeric(`Final Grade`))
     })
