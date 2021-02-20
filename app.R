@@ -45,14 +45,6 @@ ui <- dashboardPage(skin = "green",
 server <- function(input, output) {
     # Set login to false and save passwords as reactive value
     values <- reactiveValues(login = FALSE, passwords = passwords)
-    # Check if password fits
-    observe({
-        if (input$andrewID %in% values$passwords$`Andrew ID` & nchar(input$password) > 5 & grepl('[^[:alnum:]]', input$password, perl = TRUE)) {
-            enable("logIn")
-        } else {
-            disable("logIn")
-        }
-    })
     # Authenticate Users
     observeEvent(input$logIn, {
         auth <- read_excel(file, sheet = 5) %>%
