@@ -33,10 +33,13 @@ ui <- dashboardPage(skin = "green",
                 fluidRow(
                     valueBoxOutput("gradeAverage")
                 ),
-                # Table with Grades
+                # Table with Grades and Comments for the student
                 fluidRow(
                     box(width = 12, 
-                        DT::dataTableOutput("gradeTable"))
+                        DT::dataTableOutput("gradeTable"),
+                        br(),
+                        htmlOutput("gradeComments")
+                    )
                 )
             )
 )
@@ -77,13 +80,21 @@ server <- function(input, output) {
     })
     # Display grade
     output$gradeTable <- DT::renderDataTable({
-        grade()
+        if (is.null(grade())) {
+            data.frame()
+        } else {
+            select(grade(),  -c(Comments))
+        }
     }, extensions = 'Buttons', 
     rownames = FALSE,
     options = list(dom = 'Bt',
                    buttons = c('copy', 'csv', 'pdf')
                    )
     )
+    # Pull comments column and format for HTML output
+    output$gradeComments <- renderText({
+        paste("<b>Comments:</b><br>", grade()$Comments)
+    })
 }
 
 # Run the application 
