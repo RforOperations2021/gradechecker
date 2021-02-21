@@ -60,6 +60,14 @@ server <- function(input, output) {
             showNotification("Could not match username or password!", type = "error")
         }
     })
+    # Check if password fits
+    observe({
+        if (input$andrewID %in% values$passwords$`Andrew ID` & nchar(input$password) > 5 & grepl('[^[:alnum:]]', input$password, perl = TRUE)) {
+            enable("logIn")
+        } else {
+            disable("logIn")
+        }
+    })
     grades <- reactive({
         grades <- read_excel(file, sheet = input$assignment) %>%
             filter(!is.na(`Last Name`)) %>%
