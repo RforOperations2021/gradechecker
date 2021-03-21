@@ -27,7 +27,7 @@ ui <- dashboardPage(skin = "green",
             selectInput("assignment",
                         "View Grade for:",
                         choices = c("Course Grades", "Homework 1", "Homework 2", "Final Project"),
-                        selected = "Homework 1")
+                        selected = "Final Project")
             ),
         dashboardBody(
                 fluidRow(
@@ -90,6 +90,8 @@ server <- function(input, output) {
     output$gradeTable <- DT::renderDataTable({
         if (is.null(grade())) {
             data.frame()
+        } else if (input$assignment == "Course Grades") {
+            grade()
         } else {
             select(grade(),  -c(Comments))
         }
@@ -101,7 +103,9 @@ server <- function(input, output) {
     )
     # Pull comments column and format for HTML output
     output$gradeComments <- renderText({
-        paste("<b>Comments:</b><br>", grade()$Comments)
+        if (input$assignment != "Course Grades") {
+            paste("<b>Comments:</b><br>", grade()$Comments)
+        } 
     })
 }
 
